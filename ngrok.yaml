@@ -114,5 +114,5 @@ objects:
     tags:
     - from:
         kind: DockerImage
-        name: ngrok/ngrok:latest
+        name: ngrok/ngrok
       name: latest
