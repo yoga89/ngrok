@@ -1,118 +1,21 @@
-apiVersion: template.openshift.io/v1
-kind: Template
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: ngrok
-parameters:
-- name: HOST
-  displayName: Host
-  required: true
-  description: Enter the host to expose publicly. For a service in the same namespace, all you need is the service name.
-- name: PORT
-  displayName: Port
-  required: true
-  description: Enter the port to expose publicly. Only HTTP ports work.
-objects:
-- apiVersion: v1
-  kind: Service
-  metadata:
-    labels:
+spec:
+  selector:
+    matchLabels:
       app: ngrok
-    name: ngrok
-  spec:
-    ports:
-    - name: 8080-tcp
-      port: 8080
-      protocol: TCP
-      targetPort: 8080
-    selector:
-      app: ngrok
-      deploymentconfig: ngrok
-    type: ClusterIP
-- apiVersion: v1
-  kind: DeploymentConfig
-  metadata:
-    labels:
-      app: ngrok
-    name: ngrok
-  spec:
-    replicas: 1
-    selector:
-      app: ngrok
-      deploymentconfig: ngrok
-    template:
-      metadata:
-        labels:
-          app: ngrok
-          deploymentconfig: ngrok
-      spec:
-        containers:
-        - env:
-          - name: FORWARD_HOST
-            value: "${HOST}"
-          - name: FORWARD_PORT
-            value: "${PORT}"
-          image: " "
-          imagePullPolicy: Always
-          livenessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /
-              port: 8080
-              scheme: HTTP
-            initialDelaySeconds: 1
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 1
-          name: ngrok
-          ports:
-          - containerPort: 8080
-            protocol: TCP
-          readinessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /
-              port: 8080
-              scheme: HTTP
-            initialDelaySeconds: 1
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 1
-          terminationMessagePath: /dev/termination-log
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        terminationGracePeriodSeconds: 30
-    triggers:
-    - type: ConfigChange
-    - imageChangeParams:
-        automatic: true
-        containerNames:
-        - ngrok
-        from:
-          kind: ImageStreamTag
-          name: ngrok:latest
-      type: ImageChange
-- apiVersion: v1
-  kind: Route
-  metadata:
-    labels:
-      app: ngrok
-    name: ngrok
-  spec:
-    port:
-      targetPort: 8080-tcp
-    to:
-      kind: Service
-      name: ngrok
-    wildcardPolicy: None
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    labels:
-      app: ngrok
-    name: ngrok
-  spec:
-    tags:
-    - from:
-        kind: DockerImage
-        name: quay.io/openshiftfordevelopers/ngrok:latest
-      name: latest
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ngrok
+    spec:
+      containers:
+      - name: ngrok
+        image: ngrok/ngrok
+        command: ["ngrok"]
+        args: ["http", "nginx-service"]
+        ports:
+        - containerPort: 8080
